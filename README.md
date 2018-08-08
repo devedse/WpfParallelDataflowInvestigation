@@ -66,68 +66,68 @@ I've set the bound capacity of this block to 10. But does this bound capacity me
 ### The important code:
 
 ```
-        public async Task<IEnumerable<string>> ProcessDirectoryParallel(IOutputWriter logListener, int maxDegreeOfParallelism = 8)
+public async Task<IEnumerable<string>> ProcessDirectoryParallel(IOutputWriter logListener, int maxDegreeOfParallelism = 8)
+{
+    var theResults = new List<string>();
+
+    var processBlock = new TransformBlock<int, string>(async number =>
+    {
+        var processedNumber = await ProcessNumber(number);
+
+        return processedNumber;
+    }, new ExecutionDataflowBlockOptions()
+    {
+        MaxDegreeOfParallelism = maxDegreeOfParallelism,
+        BoundedCapacity = 10
+    });
+
+    var putInListBlock = new ActionBlock<string>(t =>
+    {
+
+        if (logListener != null)
         {
-            var optimizedFileResultsForThisDirectory = new List<string>();
-
-            var processFileBlock = new TransformBlock<int, string>(async number =>
-            {
-                var processedNumber = await ProcessNumber(number);
-
-                return processedNumber;
-            }, new ExecutionDataflowBlockOptions()
-            {
-                MaxDegreeOfParallelism = maxDegreeOfParallelism,
-                BoundedCapacity = 10
-            });
-
-            var putInListBlock = new ActionBlock<string>(t =>
-            {
-
-                if (logListener != null)
-                {
-                    logListener.WriteOutput(t);
-                }
-                optimizedFileResultsForThisDirectory.Add(t);
-            }, SynchronizeForUiThread(new ExecutionDataflowBlockOptions()
-            {
-
-            }));
-
-            processFileBlock.LinkTo(putInListBlock, new DataflowLinkOptions() { PropagateCompletion = true });
-
-
-            var ttt = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    Console.WriteLine($">>>>> Threads: {currentThreadsRunning}     In: {processFileBlock.InputCount} Out: {processFileBlock.OutputCount}      >>    In: {putInListBlock.InputCount} Out: {putInListBlock.Completion.IsCompleted}");
-                    await Task.Delay(1000);
-                }
-            });
-
-            var files = EnumerateNumberList(100);
-            await Task.Run(async () =>
-            {
-                foreach (var file in files)
-                {
-                    Console.WriteLine($"Posting: {file}");
-                    var result = await processFileBlock.SendAsync(file);
-
-                    if (!result)
-                    {
-                        Console.WriteLine("Result is false!!!");
-                    }
-
-                }
-            });
-
-
-
-            Console.WriteLine("Completing");
-            processFileBlock.Complete();
-            await putInListBlock.Completion;
-
-            return optimizedFileResultsForThisDirectory;
+            logListener.WriteOutput(t);
         }
+        theResults.Add(t);
+    }, SynchronizeForUiThread(new ExecutionDataflowBlockOptions()
+    {
+
+    }));
+
+    processBlock.LinkTo(putInListBlock, new DataflowLinkOptions() { PropagateCompletion = true });
+
+
+    var ttt = Task.Run(async () =>
+    {
+        while (true)
+        {
+            Console.WriteLine($">>>>> Threads: {currentThreadsRunning}     In: {processBlock.InputCount} Out: {processBlock.OutputCount}      >>    In: {putInListBlock.InputCount} Out: {putInListBlock.Completion.IsCompleted}");
+            await Task.Delay(1000);
+        }
+    });
+
+    var numbers = EnumerateNumberList(100);
+    await Task.Run(async () =>
+    {
+        foreach (var number in numbers)
+        {
+            Console.WriteLine($"Posting: {number}");
+            var result = await processBlock.SendAsync(number);
+
+            if (!result)
+            {
+                Console.WriteLine("Result is false!!!");
+            }
+
+        }
+    });
+
+
+
+    Console.WriteLine("Completing");
+    processBlock.Complete();
+    await putInListBlock.Completion;
+
+    return theResults;
+}
 ```        
