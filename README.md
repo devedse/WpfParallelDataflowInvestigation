@@ -61,7 +61,11 @@ Processed: 12
 
 As can be seen in the log file above it ultimately ends with 1 thread running.
 
-I've set the bound capacity of this block to 10. But does this bound capacity means that it will store 10 items in some kind of output buffer? Or does it mean it will allow 10 items to be queued? (Because that also seems to be happening as it's queuing 10 items at the start).
+### Questions
+
+1. I've set the bound capacity of this block to 10. But does this bound capacity means that it will store 10 items in some kind of output buffer?
+2. It also seems the bounded capacity influences the number of items that can be queued (as can be seen at the start where 10 items get queued).
+3. I also log the In: .. and Out: .. buffer counts, but they stay 0 all the time. Where are my messages that are done processing but are waiting to be output untill that item 5 is complete?
 
 ### The important code:
 
