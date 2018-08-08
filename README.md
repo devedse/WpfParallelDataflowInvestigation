@@ -66,7 +66,7 @@ I've set the bound capacity of this block to 10. But does this bound capacity me
 ### The important code:
 
 ```
-public async Task<IEnumerable<string>> ProcessDirectoryParallel(IOutputWriter logListener, int maxDegreeOfParallelism = 8)
+public async Task<IEnumerable<string>> ProcessInParallel(IOutputWriter logListener, int maxDegreeOfParallelism = 8)
 {
     var theResults = new List<string>();
 
